@@ -11,8 +11,8 @@ indicator_to_code = pd.read_csv("indicators_table.csv")
 
 app = Flask(__name__)
 
-# def get_indicator_code(input_data_type):
-#     return indicator_to_code['Code'][list(np.where((indicator_to_code['Indicator']==input_data_type)==True))[0][0]]
+def get_indicator(input_data_type):
+    return indicator_to_code['Indicator'][list(np.where((indicator_to_code['Code']==input_data_type)==True))[0][0]]
 
 def get_quandl_data(input_zipcode, code, from_date, to_date):
     return quandl.get('ZILLOW/Z{}_{}'.format(input_zipcode, code), start_date=from_date, end_date=to_date)
@@ -65,9 +65,8 @@ def data():
     to_date = request.args.get('end_date')
     # from_date_string = from_date.strftime('%Y-%m-%d')
     # to_date_string = to_date.strftime('%Y-%m-%d')
-    return plot_time_series(get_quandl_data(zip_code, indicator, from_date, to_date), indicator, zip_code)
+    return plot_time_series(get_quandl_data(zip_code, indicator, from_date, to_date), get_indicator(indicator), zip_code)
 
-    # return str(quandl.get('ZILLOW/Z{}_{}'.format(zip_code, indicator), start_date=now_string, end_date=now_string))
 
 if __name__ == '__main__':
     app.run()
