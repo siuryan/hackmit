@@ -29,32 +29,35 @@ def plot_time_series(series, input_data_type, input_zipcode):
     pyplot.plot(series)
     pyplot.xlabel("Time", fontsize="x-large", weight="bold")
     pyplot.ylabel(input_data_type, fontsize="x-large", weight="bold")
-    pyplot.title("{} for area {}".format(input_data_type, input_zipcode))
+    pyplot.title("{} for area {}".format(input_data_type, input_zipcode), fontsize="x-large")
+
+    pyplot.tight_layout()
 
     html = mpld3.fig_to_html(fig, template_type="simple")
-    print (html)
     return html
 
 def get_school_link(zipcode):
-    zipcode = "07871"
-    state = 'NJ'
-    text = requests.get('https://nces.ed.gov/ccd/districtsearch/district_list.asp?Search=1&details=1&InstName=&DistrictID=&Address=&City=&State=&Zip=' +  zipcode + '&Miles=&County=&PhoneAreaCode=&Phone=&DistrictType=1&DistrictType=2&DistrictType=3&DistrictType=4&DistrictType=5&DistrictType=6&DistrictType=7&DistrictType=8&NumOfStudents=&NumOfStudentsRange=more&NumOfSchools=&NumOfSchoolsRange=more')
-    soup = BS(text.content, 'html5lib') 
+    try:
+        text = requests.get('https://nces.ed.gov/ccd/districtsearch/district_list.asp?Search=1&details=1&InstName=&DistrictID=&Address=&City=&State=&Zip=' +  zipcode + '&Miles=&County=&PhoneAreaCode=&Phone=&DistrictType=1&DistrictType=2&DistrictType=3&DistrictType=4&DistrictType=5&DistrictType=6&DistrictType=7&DistrictType=8&NumOfStudents=&NumOfStudentsRange=more&NumOfSchools=&NumOfSchoolsRange=more')
+        soup = BS(text.content, 'html5lib')
 
-    links = []
-    for link in soup.findAll('a', attrs={'href': re.compile("district_detail")}):
-        links.append('https://nces.ed.gov/ccd/districtsearch/' + link.get('href'))
+        links = []
+        for link in soup.findAll('a', attrs={'href': re.compile("district_detail")}):
+            links.append('https://nces.ed.gov/ccd/districtsearch/' + link.get('href'))
 
-    finallink = links[0]
-    text2 = requests.get(finallink)
+        finallink = links[0]
+        text2 = requests.get(finallink)
 
-    soup2 = BS(text2.content, 'html5lib') 
+        soup2 = BS(text2.content, 'html5lib')
 
-    links2 = []
-    for link in soup2.findAll('a', attrs={'href': re.compile("/Programs/Edge")}):
-        links2.append('https://nces.ed.gov' + link.get('href'))
-        
-    return links2[0]
+        links2 = []
+        for link in soup2.findAll('a', attrs={'href': re.compile("/Programs/Edge")}):
+            links2.append('https://nces.ed.gov' + link.get('href'))
+
+        return links2[0]
+
+    except:
+        return None
 
 @app.route('/')
 def home():
@@ -90,7 +93,21 @@ def data():
 
     link = get_school_link(zip_code)
 
-    return plot_time_series(get_quandl_data(zip_code, indicator, from_date, to_date), get_indicator(indicator), zip_code) + "<p>School: {}</p>".format(link)
+    html = plot_time_series(get_quandl_data(zip_code, indicator, from_date, to_date), get_indicator(indicator), zip_code)
+    if link is None:
+        html += "<p>School information not available</p>"
+    else:
+        html += "<p><a href={}>School Information</a></p>".format(link)
+
+    html += """
+    <style>
+    body {
+    text-align: center;
+    }
+    </style>
+    """
+
+    return html
 
 
 if __name__ == '__main__':
